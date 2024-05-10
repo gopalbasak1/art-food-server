@@ -60,6 +60,21 @@ async function run() {
     })
 
 
+    //get all products posted by a specific user
+    app.get('/products/:email', async(req, res) =>{
+      const email = req.params.email;
+      const query = {"buyer.email": email}
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    //Save a product in db
+    app.post('/product', async(req, res)=>{
+      const productData = req.body;
+      const result = await productsCollection.insertOne(productData);
+      res.send(result);
+    })
+
 
 
 
