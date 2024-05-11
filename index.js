@@ -39,7 +39,8 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
 
-    const productsCollection = client.db('artFood').collection('products')
+    const productsCollection = client.db('artFood').collection('products');
+    const purchaseCollection = client.db('artFood').collection('purchase')
 
 
 
@@ -92,7 +93,15 @@ async function run() {
     })
 
 
+     //Save a bid data in db
+     app.post('/purchase', async(req, res) =>{
+      const purchaseData = req.body;
+      const result = await purchaseCollection.insertOne(purchaseData);
+      res.send(result);
+    })
 
+
+  
 
 
 
