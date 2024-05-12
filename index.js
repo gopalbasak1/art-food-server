@@ -95,35 +95,42 @@ async function run() {
 
      //Save a bid data in db
     // Save a purchase data in db
-app.post('/purchase', async(req, res) =>{
-  const purchaseData = req.body;
-  try {
-    // Insert purchase data into purchaseCollection
-    const purchaseResult = await purchaseCollection.insertOne(purchaseData);
-    // Get the purchaseQuantity from the purchase data
-    const purchaseQuantity = purchaseData.purchaseQuantity;
-    // Get the productId from the purchase data
-    const productId = purchaseData.productId;
-    // Find the product in productsCollection by productId
-    const productQuery = {_id: new ObjectId(productId)};
-    const product = await productsCollection.findOne(productQuery);
-    // Check if product exists
-    if (product) {
-      // Subtract the purchaseQuantity from the current foodQuantity
-      const newQuantity = product.quantity - purchaseQuantity;
-      // Update the product's foodQuantity in productsCollection
-      const updateProductResult = await productsCollection.updateOne(productQuery, {$set: {quantity: newQuantity}});
-      // Return the result of the purchase insertion
-      res.json({purchase: purchaseResult, productUpdate: updateProductResult});
-    } else {
-      res.status(404).json({error: 'Product not found'});
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({error: 'Failed to complete purchase. Please try again later.'});
-  }
-});
-
+    app.post('/purchase', async (req, res) => {
+      const purchaseData = req.body;
+      try {
+        // Insert purchase data into purchaseCollection
+        const purchaseResult = await purchaseCollection.insertOne(purchaseData);
+        // Get the purchaseQuantity from the purchase data
+        const purchaseQuantity = purchaseData.purchaseQuantity;
+        // Get the productId from the purchase data
+        const productId = purchaseData.productId;
+        // Find the product in productsCollection by productId
+        const productQuery = { _id: new ObjectId(productId) };
+        const product = await productsCollection.findOne(productQuery);
+        // Check if product exists
+        if (product) {
+          // Subtract the purchaseQuantity from the current foodQuantity
+          const newQuantity = product.quantity - purchaseQuantity;
+          // Update the product's foodQuantity in productsCollection
+          const updateProductResult = await productsCollection.updateOne(productQuery, { $set: { quantity: newQuantity } });
+          // Increment the purchase count
+          await productsCollection.updateOne(productQuery, { $inc: { count: 1 } });
+          // Return the result of the purchase insertion
+          res.json({ purchase: purchaseResult, productUpdate: updateProductResult });
+        } else {
+          res.status(404).json({ error: 'Product not found' });
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: 'Failed to complete purchase. Please try again later.' });
+      }
+    });
+    
+    // Redirect to login page if user is not logged in
+    // app.get('/food-purchase', authenticateUser, (req, res) => {
+    //   // Render the food purchase page
+    //   res.render('food-purchase');
+    // });
 
     //get all bids for a user by email from db
     app.get('/my-purchase/:email', async(req, res) =>{
@@ -154,6 +161,28 @@ app.post('/purchase', async(req, res) =>{
         const newQuantity = product.quantity + purchase.purchaseQuantity;
         const updateProductResult = await productsCollection.updateOne(productQuery, {$set: {quantity: newQuantity}});
     
+        // Delete the purchase from purchaseCollection
+        const result = await purchaseCollection.deleteOne(purchaseQuery);
+    
+        res.json({purchaseDelete: result, productUpdate: updateProductResult});
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({error: 'Failed to delete purchase. Please try again later.'});
+      }
+    })
+
+
+    app.get('/top-foods', async (req, res) => {
+      try {
+          // Find the top-selling food items based on purchase count
+          const topFoods = await productsCollection.find().sort({ count: -1 }).limit(6).toArray();
+          res.json(topFoods);
+      } catch (error) {
+          console.error("Error:", error);
+          res.status(500).json({ error: 'Failed to retrieve top-selling food items. Please try again later.' });
+      }
+  });
+
 
     
   
