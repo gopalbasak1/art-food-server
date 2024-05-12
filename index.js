@@ -94,11 +94,36 @@ async function run() {
 
 
      //Save a bid data in db
-     app.post('/purchase', async(req, res) =>{
-      const purchaseData = req.body;
-      const result = await purchaseCollection.insertOne(purchaseData);
-      res.send(result);
-    })
+    // Save a purchase data in db
+app.post('/purchase', async(req, res) =>{
+  const purchaseData = req.body;
+  try {
+    // Insert purchase data into purchaseCollection
+    const purchaseResult = await purchaseCollection.insertOne(purchaseData);
+    // Get the purchaseQuantity from the purchase data
+    const purchaseQuantity = purchaseData.purchaseQuantity;
+    // Get the productId from the purchase data
+    const productId = purchaseData.productId;
+    // Find the product in productsCollection by productId
+    const productQuery = {_id: new ObjectId(productId)};
+    const product = await productsCollection.findOne(productQuery);
+    // Check if product exists
+    if (product) {
+      // Subtract the purchaseQuantity from the current foodQuantity
+      const newQuantity = product.quantity - purchaseQuantity;
+      // Update the product's foodQuantity in productsCollection
+      const updateProductResult = await productsCollection.updateOne(productQuery, {$set: {quantity: newQuantity}});
+      // Return the result of the purchase insertion
+      res.json({purchase: purchaseResult, productUpdate: updateProductResult});
+    } else {
+      res.status(404).json({error: 'Product not found'});
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({error: 'Failed to complete purchase. Please try again later.'});
+  }
+});
+
 
     //get all bids for a user by email from db
     app.get('/my-purchase/:email', async(req, res) =>{
@@ -108,10 +133,30 @@ async function run() {
       res.send(result)
     });
 
+    app.delete('/purchaseDelete/:id', async(req, res) =>{
+      const id = req.params.id;
+      try {
+        // Find the purchase data by id
+        const purchaseQuery = {_id: new ObjectId(id)};
+        const purchase = await purchaseCollection.findOne(purchaseQuery);
+        if (!purchase) {
+          return res.status(404).json({error: 'Purchase not found'});
+        }
+    
+        // Update the product's quantity in productsCollection
+        const productId = purchase.productId;
+        const productQuery = {_id: new ObjectId(productId)};
+        const product = await productsCollection.findOne(productQuery);
+        if (!product) {
+          return res.status(404).json({error: 'Product not found'});
+        }
+    
+        const newQuantity = product.quantity + purchase.purchaseQuantity;
+        const updateProductResult = await productsCollection.updateOne(productQuery, {$set: {quantity: newQuantity}});
+    
 
+    
   
-
-
 
 
 
