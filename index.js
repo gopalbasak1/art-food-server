@@ -184,7 +184,19 @@ async function run() {
   });
 
 
-    
+    // Search products by food name
+app.get('/search', async (req, res) => {
+  try {
+      const { foodName } = req.query;
+      const query = { foodName: { $regex: new RegExp(foodName, 'i') } };
+      const searchResults = await productsCollection.find(query).toArray();
+      res.json(searchResults);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Failed to perform search. Please try again later.' });
+  }
+});
+
   
 
 
