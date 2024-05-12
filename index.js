@@ -100,6 +100,14 @@ async function run() {
       res.send(result);
     })
 
+    //get all bids for a user by email from db
+    app.get('/my-purchase/:email', async(req, res) =>{
+      const email = req.params.email;
+      const query = {email};
+      const result = await purchaseCollection.find(query).toArray();
+      res.send(result)
+    });
+
 
   
 
