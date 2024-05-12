@@ -40,7 +40,8 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
 
     const productsCollection = client.db('artFood').collection('products');
-    const purchaseCollection = client.db('artFood').collection('purchase')
+    const purchaseCollection = client.db('artFood').collection('purchase');
+    const reviewCollection = client.db('artFood').collection('review');
 
 
 
@@ -90,10 +91,17 @@ async function run() {
       }
       const result = await productsCollection.updateOne(query, updateDoc, options);
       res.send(result);
+    });
+
+     //delete a job data from db
+     app.delete('/product/:id',  async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
     })
 
 
-     //Save a bid data in db
     // Save a purchase data in db
     app.post('/purchase', async (req, res) => {
       const purchaseData = req.body;
@@ -197,10 +205,28 @@ app.get('/search', async (req, res) => {
   }
 });
 
-  
+    // Save a review in db
+app.post('/reviews', async (req, res) => {
+  try {
+      const reviewData = req.body;
+      const result = await reviewCollection.insertOne(reviewData);
+      res.send(result);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Failed to save review. Please try again later.' });
+  }
+});
 
-
-
+// Get all reviews from db
+app.get('/reviews', async (req, res) => {
+  try {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Failed to retrieve reviews. Please try again later.' });
+  }
+});
 
 
     // Send a ping to confirm a successful connection
