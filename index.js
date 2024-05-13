@@ -159,6 +159,16 @@ async function run() {
     app.post('/purchase', verifyToken, async (req, res) => {
       const purchaseData = req.body;
       try {
+        const query = {
+          email: purchaseData.email,
+          productId: purchaseData.productId
+        }
+        const alreadyPurchased = await purchaseCollection.findOne(query)
+        console.log(alreadyPurchased);
+        if(alreadyPurchased){
+          return res.status(400).send('You have already placed a order on this product')
+        }
+        
         // Insert purchase data into purchaseCollection
         const purchaseResult = await purchaseCollection.insertOne(purchaseData);
         // Get the purchaseQuantity from the purchase data
@@ -304,6 +314,20 @@ app.get('/registers', async (req, res) => {
   }
 });
 
+  //Get all products data from pagination
+  app.get('/all-products', async(req, res)=>{
+    const size = parseInt(req.query.size);
+    const page = parseInt(req.query.page) - 1;
+    console.log(size,page);
+    const result = await productsCollection.find().skip(page * size).limit(size).toArray();
+    res.send(result);
+});
+
+  //Get all products data count from db
+  app.get('/products-count', async(req, res)=>{
+    const count = await productsCollection.countDocuments()
+    res.send({count});
+})
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
