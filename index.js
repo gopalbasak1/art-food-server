@@ -285,7 +285,7 @@ app.get('/reviews', async (req, res) => {
 app.post('/registers', async (req, res) => {
   try {
       const reviewData = req.body;
-      const result = await reviewCollection.insertOne(reviewData);
+      const result = await registersCollection.insertOne(reviewData);
       res.send(result);
   } catch (error) {
       console.error("Error:", error);
@@ -296,7 +296,7 @@ app.post('/registers', async (req, res) => {
 // Get all registers from db
 app.get('/registers', async (req, res) => {
   try {
-      const result = await reviewCollection.find().toArray();
+      const result = await registersCollection.find().toArray();
       res.send(result);
   } catch (error) {
       console.error("Error:", error);
