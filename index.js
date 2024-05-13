@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
@@ -19,7 +21,28 @@ const corsOptions = {
 //middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
+
+//verify jwt middleware
+const verifyToken = (req, res, next)=>{
+  const token = req.cookies?.token;
+  console.log(30,req.cookies);
+  if(!token) return res.status(401).send({message: 'unauthorized access'})
+
+  if(token){
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+      if(err){
+        console.log(err);
+        return res.status(401).send({message: 'unauthorized access'})
+      }
+      console.log(decoded);
+      req.user = decoded
+      next()
+    })
+  }
+
+}
 
 
 
@@ -42,9 +65,32 @@ async function run() {
     const productsCollection = client.db('artFood').collection('products');
     const purchaseCollection = client.db('artFood').collection('purchase');
     const reviewCollection = client.db('artFood').collection('review');
+    const registersCollection = client.db('artFood').collection('register');
 
 
+    //jwt generate
+    app.post('/jwt', async(req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '1hr'
+      })
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV==='production',
+        sameSite: process.env.NODE_ENV==='production'?'none':'strict',
+      }).send({success: true})
+    })
 
+    //Clear token on logout
+    app.get('/logout', (req, res)=>{
+      res.clearCookie('token',{
+        httpOnly: true,
+        secure: process.env.NODE_ENV==='production',
+        sameSite: process.env.NODE_ENV==='production'?'none':'strict',
+        maxAge:0,
+      }).send({success: true});
+    })
 
     //Get all products data from db
     app.get('/products', async(req, res)=>{
@@ -61,13 +107,20 @@ async function run() {
         res.send(result);
     })
 
-
     //get all products posted by a specific user
-    app.get('/products/:email', async(req, res) =>{
+    app.get('/products/:email', verifyToken, async(req, res) =>{
+
+      const tokenEmail = req.user.email;
       const email = req.params.email;
+
+        if(tokenEmail !== email){
+        return res.status(403).send({message: 'forbidden access'})
+        }
+
       const query = {"buyer.email": email}
       const result = await productsCollection.find(query).toArray();
       res.send(result);
+
     })
 
     //Save a product in db
@@ -79,7 +132,7 @@ async function run() {
 
 
     //Update a product in db
-    app.put('/product/:id', async(req, res) => {
+    app.put('/product/:id', verifyToken, async(req, res) => {
       const id = req.params.id;
       const productData = req.body;
       const query = {_id: new ObjectId(id)}
@@ -103,7 +156,7 @@ async function run() {
 
 
     // Save a purchase data in db
-    app.post('/purchase', async (req, res) => {
+    app.post('/purchase', verifyToken, async (req, res) => {
       const purchaseData = req.body;
       try {
         // Insert purchase data into purchaseCollection
@@ -141,7 +194,7 @@ async function run() {
     // });
 
     //get all bids for a user by email from db
-    app.get('/my-purchase/:email', async(req, res) =>{
+    app.get('/my-purchase/:email', verifyToken, async(req, res) =>{
       const email = req.params.email;
       const query = {email};
       const result = await purchaseCollection.find(query).toArray();
@@ -219,6 +272,29 @@ app.post('/reviews', async (req, res) => {
 
 // Get all reviews from db
 app.get('/reviews', async (req, res) => {
+  try {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Failed to retrieve reviews. Please try again later.' });
+  }
+});
+
+    // Save a registers in db
+app.post('/registers', async (req, res) => {
+  try {
+      const reviewData = req.body;
+      const result = await reviewCollection.insertOne(reviewData);
+      res.send(result);
+  } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: 'Failed to save review. Please try again later.' });
+  }
+});
+
+// Get all registers from db
+app.get('/registers', async (req, res) => {
   try {
       const result = await reviewCollection.find().toArray();
       res.send(result);
