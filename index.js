@@ -68,6 +68,7 @@ async function run() {
     const purchaseCollection = client.db('artFood').collection('purchase');
     const reviewCollection = client.db('artFood').collection('review');
     const registersCollection = client.db('artFood').collection('register');
+    const categoryCollection = client.db("artFood").collection("categories");
 
 
     //jwt generate
@@ -126,7 +127,7 @@ async function run() {
     })
 
     //Save a product in db
-    app.post('/product', async(req, res)=>{
+    app.post('/all-product', async(req, res)=>{
       const productData = req.body;
       const result = await productsCollection.insertOne(productData);
       res.send(result);
@@ -330,6 +331,35 @@ app.get('/registers', async (req, res) => {
     const count = await productsCollection.countDocuments()
     res.send({count});
 })
+
+
+//Category
+
+// Get all categories
+app.get("/categories", async (req, res) => {
+  try {
+    const categories = await categoryCollection.find().toArray();
+    res.send(categories);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).send({ error: "Failed to fetch categories" });
+  }
+});
+
+// Get products by category
+app.get("/categories/:foodCategory", async (req, res) => {
+  const foodCategory = req.params.foodCategory;
+  const query = { foodCategory: foodCategory };
+  try {
+    const products = await productsCollection.find(query).toArray();
+    res.send(products);
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    res.status(500).send({ error: "Failed to fetch products" });
+  }
+});
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
