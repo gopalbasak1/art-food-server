@@ -161,7 +161,7 @@ async function run() {
     // Save a purchase data in db
     app.post('/purchase', verifyToken, async (req, res) => {
       const purchaseData = req.body;
-      try {
+     
         const query = {
           email: purchaseData.email,
           productId: purchaseData.productId
@@ -194,10 +194,7 @@ async function run() {
         } else {
           res.status(404).json({ error: 'Product not found' });
         }
-      } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ error: 'Failed to complete purchase. Please try again later.' });
-      }
+       
     });
     
     // Redirect to login page if user is not logged in
@@ -216,7 +213,7 @@ async function run() {
 
     app.delete('/purchaseDelete/:id', async(req, res) =>{
       const id = req.params.id;
-      try {
+      
         // Find the purchase data by id
         const purchaseQuery = {_id: new ObjectId(id)};
         const purchase = await purchaseCollection.findOne(purchaseQuery);
@@ -239,82 +236,51 @@ async function run() {
         const result = await purchaseCollection.deleteOne(purchaseQuery);
     
         res.json({purchaseDelete: result, productUpdate: updateProductResult});
-      } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({error: 'Failed to delete purchase. Please try again later.'});
-      }
+       
     })
 
 
     app.get('/top-foods', async (req, res) => {
-      try {
+ 
           // Find the top-selling food items based on purchase count
           const topFoods = await productsCollection.find().sort({ count: -1 }).limit(6).toArray();
           res.json(topFoods);
-      } catch (error) {
-          console.error("Error:", error);
-          res.status(500).json({ error: 'Failed to retrieve top-selling food items. Please try again later.' });
-      }
+     
   });
 
 
     // Search products by food name
 app.get('/search', async (req, res) => {
-  try {
       const { foodName } = req.query;
       const query = { foodName: { $regex: new RegExp(foodName, 'i') } };
       const searchResults = await productsCollection.find(query).toArray();
       res.json(searchResults);
-  } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: 'Failed to perform search. Please try again later.' });
-  }
 });
 
     // Save a review in db
 app.post('/reviews', async (req, res) => {
-  try {
       const reviewData = req.body;
       const result = await reviewCollection.insertOne(reviewData);
       res.send(result);
-  } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: 'Failed to save review. Please try again later.' });
-  }
 });
 
 // Get all reviews from db
 app.get('/reviews', async (req, res) => {
-  try {
       const result = await reviewCollection.find().toArray();
       res.send(result);
-  } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: 'Failed to retrieve reviews. Please try again later.' });
-  }
 });
 
     // Save a registers in db
 app.post('/registers', async (req, res) => {
-  try {
       const reviewData = req.body;
       const result = await registersCollection.insertOne(reviewData);
       res.send(result);
-  } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: 'Failed to save review. Please try again later.' });
-  }
 });
 
 // Get all registers from db
 app.get('/registers', async (req, res) => {
-  try {
       const result = await registersCollection.find().toArray();
       res.send(result);
-  } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: 'Failed to retrieve reviews. Please try again later.' });
-  }
 });
 
   //Get all products data from pagination
@@ -337,26 +303,17 @@ app.get('/registers', async (req, res) => {
 
 // Get all categories
 app.get("/categories", async (req, res) => {
-  try {
     const categories = await categoryCollection.find().toArray();
     res.send(categories);
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    res.status(500).send({ error: "Failed to fetch categories" });
-  }
 });
 
 // Get products by category
 app.get("/categories/:foodCategory", async (req, res) => {
   const foodCategory = req.params.foodCategory;
   const query = { foodCategory: foodCategory };
-  try {
+
     const products = await productsCollection.find(query).toArray();
     res.send(products);
-  } catch (error) {
-    console.error("Error fetching products by category:", error);
-    res.status(500).send({ error: "Failed to fetch products" });
-  }
 });
 
 
